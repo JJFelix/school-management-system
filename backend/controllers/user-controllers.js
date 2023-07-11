@@ -4,12 +4,39 @@ import User from '../models/User.js'
 import Student from '../models/Student.js'
 import Teacher from '../models/Teacher.js'
 
-export const helloUser = async (req,res,next)=>{
-    res.status(200).json({message:'Hello friend'})
+export const getUsers = async (req,res,next)=>{
+    try{
+        const users = await User.find()
+
+        // if(!users){
+
+        // }
+        return res.status(200).json({ users })
+    }catch (err){
+        console.err(err)
+        return res.status(500).json({message:"Unexpected error"})
+    }
 }
 
-export const createAdminUser = async (req,res,next)=>{
-    const {name, email, password, phone_number, address, role } = req.body
+export const getUser = async (req, res, next)=>{
+    const {id} = req.params
+
+    try {
+        const user = await User.findById(id)    
+        
+        if(!user){
+            console.error("User not found")
+        }
+
+        return res.status(200).json({user})
+    } catch (err) {
+        
+    }
+}
+
+export const register = async (req,res,next)=>{
+    const { name, email, password, phone_number, address, 
+        role, admission_number, employer_number } = req.body
 
     if(
         !name || name.trim()==="" ||
@@ -17,7 +44,7 @@ export const createAdminUser = async (req,res,next)=>{
         !password || password.trim()==="" ||
         !phone_number || phone_number===undefined ||
         !address || address.trim()==="" ||
-        !role || role.trim()===""
+        !role || role.trim()==="" 
     ){
         console.error("Invalid inputs")
         return res.status(422).json({message:"Invalid inputs"})
@@ -25,26 +52,49 @@ export const createAdminUser = async (req,res,next)=>{
 
     const hashedPassword = bcrypt.hashSync(password, 10)
 
-    // let user
     try {
         const user = new User({
             name, email, password:hashedPassword,phone_number, address, role 
         })
+        
+
+        if (admission_number){
+            const student = new Student({
+                user:user, admission_number
+            })
+            await student.save()
+        }    
+
+        if (employer_number){
+            const teacher = new Teacher({
+                user:user, employer_number
+            })
+            await teacher.save()
+        }    
+        
         await user.save()
+        
         console.log('User created successfully:', user)
         return res.status(200).json({user})
     } catch (err) {
         console.error(err) 
         return res.status(500).json({message:"Unexpected error occurred"})
     }
+}
 
-    // if(!user){
-    //     console.log('Unexpected error occurred')
-    //     return res.status(500).json({message:'Unexpected error occurred'})
-    // }
+export const getStudents = (req, res, next)=>{
+    try {
+        const students = Student.find()
 
-    // console.log('User:', user)
-    // return res.status(201).json({user})
+        // if(!students || students.length === 0){
+        //     console.log("Students not found")
+        //     return res.status(404).json({message:"Students not found"})
+        // }
+        return res.status(200).json({ students })
+    } catch (err) {
+        console.error(err)
+        return res.status(200).json({message:"Unexpected error happened"})
+    }
 }
 
 export const login = async (req,res,next)=>{
@@ -78,5 +128,44 @@ export const login = async (req,res,next)=>{
     }catch(err){
         console.error(err)
         return res.status(500).json({message: "Unexpected error occurred"})
+    }
+}
+
+export const updateUser = async (req,res,next)=>{
+    const {user_id, role_id} = req.params
+    
+    try {
+        const updatedUser = await User.findByIdAndUpdate(
+            user_id, 
+            {$set:req.body},
+            {new:true}
+        )
+        console.log("User updated successfully")
+
+        if (req.body.admission_number){
+            const updatedStudent = await Student.findByIdAndUpdate(
+                role_id, 
+                {$set:req.body},
+                {new:true}
+            )
+            console.log("Student updated successfully", updatedStudent)
+            return res.status(200).json({updatedStudent})
+        }
+
+        if (req.body.employer_number){
+            const updatedTeacher = await Teacher.findByIdAndUpdate(
+                role_id, 
+                {$set:req.body},
+                {new:true}
+            )
+            console.log("Teacher updated successfully", updatedTeacher)
+            return res.status(200).json({updatedTeacher})
+        }
+
+        return res.status(200).json(updatedUser)
+
+    } catch (err) {
+        console.error(err)        
+        res.status(500).json("Unexpected error occurred")
     }
 }
