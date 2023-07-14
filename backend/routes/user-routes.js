@@ -6,6 +6,7 @@ const userRouter = express.Router()
 userRouter.get('/', getUsers)
 userRouter.get('/:id', getUser)
 userRouter.get('/students', getStudents)
+userRouter.get('/teachers', )
 
 userRouter.post('/register/', register)
 userRouter.post('/login/', login)
