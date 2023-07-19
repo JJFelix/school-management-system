@@ -2,7 +2,9 @@ import express  from "express";
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 
-import userRouter from "./routes/user-routes.js";
+import userRouter from "./routes/user-routes.js"
+import studentRouter from "./routes/student-routes.js";
+import teacherRouter from "./routes/teacher-routes.js";
 
 dotenv.config()
 
@@ -11,6 +13,8 @@ const app = express()
 // middleware
 app.use(express.json())
 app.use('/api/users',userRouter)
+app.use('/api/students', studentRouter)
+app.use('/api/teachers', teacherRouter)
 
 
 mongoose.connect(
@@ -21,8 +25,3 @@ mongoose.connect(
         })
     ).catch((err)=> console.error(err)
 )
-
-
-// app.listen(5000, ()=>{
-//     console.log('Server listening on port http://localhost:5000')
-// })

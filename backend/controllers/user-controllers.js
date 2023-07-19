@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt'
+import { validationResult } from 'express-validator'
 
 import User from '../models/User.js'
 import Student from '../models/Student.js'
@@ -7,60 +8,49 @@ import Teacher from '../models/Teacher.js'
 export const getUsers = async (req,res,next)=>{
     try{
         const users = await User.find()
-
-        // if(!users){
-
-        // }
+        if(!users){
+            console.error("No users found")
+            return res.status(404).json({ message: "No users found" })
+        }
+        console.log("Users retrieved successfully");
         return res.status(200).json({ users })
     }catch (err){
         console.err(err)
-        return res.status(500).json({message:"Unexpected error"})
+        return res.status(500).json({message:"Unexpected error occurred"})
     }
 }
 
 export const getUser = async (req, res, next)=>{
     const {id} = req.params
-
     try {
-        const user = await User.findById(id)    
-        
+        const user = await User.findById(id)            
         if(!user){
             console.error("User not found")
+            return res.status(404).json({ message: "User not found"})
         }
-
         return res.status(200).json({user})
     } catch (err) {
-        
+        console.error(err)
+        return res.status(500).json({message:"Unexpected error occurred."})  
     }
 }
 
 export const register = async (req,res,next)=>{
     const { name, email, password, phone_number, address, 
         role, admission_number, employer_number } = req.body
-
-    if(
-        !name || name.trim()==="" ||
-        !email || email.trim()==="" ||
-        !password || password.trim()==="" ||
-        !phone_number || phone_number===undefined ||
-        !address || address.trim()==="" ||
-        !role || role.trim()==="" 
+    if(!name || name.trim()==="" ||!email || email.trim()==="" ||
+        !password || password.trim()==="" || !phone_number || phone_number===undefined ||
+        !address || address.trim()==="" || !role || role.trim()==="" 
     ){
         console.error("Invalid inputs")
         return res.status(422).json({message:"Invalid inputs"})
     }
-
-    const hashedPassword = bcrypt.hashSync(password, 10)
-
+    const hashedPassword = await bcrypt.hash(password, 10)
     try {
-        const user = new User({
-            name, email, password:hashedPassword,phone_number, address, role 
-        })
-        
-
+        const user = new User({ name, email, password:hashedPassword,phone_number, address, role })      
         if (admission_number){
-            const student = new Student({
-                user:user, admission_number
+            const student = new Student({ 
+                user:user, admission_number 
             })
             await student.save()
         }    
@@ -70,10 +60,8 @@ export const register = async (req,res,next)=>{
                 user:user, employer_number
             })
             await teacher.save()
-        }    
-        
-        await user.save()
-        
+        }        
+        await user.save()        
         console.log('User created successfully:', user)
         return res.status(200).json({user})
     } catch (err) {
@@ -82,47 +70,27 @@ export const register = async (req,res,next)=>{
     }
 }
 
-export const getStudents = (req, res, next)=>{
-    try {
-        const students = Student.find()
-
-        // if(!students || students.length === 0){
-        //     console.log("Students not found")
-        //     return res.status(404).json({message:"Students not found"})
-        // }
-        return res.status(200).json({ students })
-    } catch (err) {
-        console.error(err)
-        return res.status(200).json({message:"Unexpected error happened"})
-    }
-}
-
 export const login = async (req,res,next)=>{
     const {email, password}  = req.body
-
     if(
-        !email || email.trim()==="" ||
-        !password || password.trim()===""
+        !email || email.trim()==="" || !password || password.trim()===""
     ){
         console.error("Invalid details")
         return res.status(422).json({message:"Invalid inputs"})
     }
-
     try{
-        const existingUser = await User.findOne({ email })   
-        
+        const existingUser = await User.findOne({ email })     
         if(!existingUser){
             console.error("User not found")
             return res.status(404).json({message:"User not found"})
         }  
         
-        const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password)
+        const isPasswordCorrect = await bcrypt.compare(password, existingUser.password)
 
         if(!isPasswordCorrect){
             console.error("Incorrect password")
             return res.status(404).json({message:"Incorrect password"})
         }
-
         console.log("Successfully logged in")
         return res.status(200).json({message:"Successfully logged in",id:existingUser._id})
     }catch(err){
@@ -131,38 +99,87 @@ export const login = async (req,res,next)=>{
     }
 }
 
+export const updateLoginCredentials = async (req,res,next)=>{
+    const errors = validationResult(req)
+    if (!errors.isEmpty()){
+        return res.status(422).json({ errors: errors.array() })
+    }
+
+    const {user_id} = req.params
+    const {email, password} = req.body  
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10)
+        const updatedUserDetails = await User.findByIdAndUpdate(
+            user_id,
+            { email:email, password:hashedPassword},
+            { new: true }
+        )
+        if(!updatedUserDetails){
+            console.error("User not found")
+            return res.status(404).json({message:"User not found"})
+        }
+        console.log("Successfully updated user login details")
+        return res.status(200).json({message: "User login details updated successfully"})
+    } catch (err) {
+        console.error(err)        
+        return res.status(500).json({err})
+    }
+}
+
 export const updateUser = async (req,res,next)=>{
-    const {user_id, role_id} = req.params
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+
+    const {user_id} = req.params
     
     try {
         const updatedUser = await User.findByIdAndUpdate(
             user_id, 
-            {$set:req.body},
-            {new:true}
+            { $set:req.body },
+            { new:true }
         )
-        console.log("User updated successfully")
+
+        if(!updateUser){
+            console.error("User not found")
+            return res.status(404).json({ message: "User not found" })
+        }
+        
+        if (req.body.employer_number){
+            const updatedTeacher = await Teacher.findOneAndUpdate(
+                { user: user_id },
+                { $set:req.body },
+                { new:true }
+            )
+    
+            if(!updatedTeacher){
+                console.error("Teacher not found")
+                return res.status(404).json({ message: "Teacher not found" })
+            }
+            console.log("Teacher updated successfully", updatedTeacher)
+            return res.status(200).json({ updatedTeacher })
+        }
 
         if (req.body.admission_number){
-            const updatedStudent = await Student.findByIdAndUpdate(
-                role_id, 
-                {$set:req.body},
-                {new:true}
+            const updatedStudent = await Student.findOneAndUpdate(
+                { user:user_id },
+                { $set:req.body },
+                { new:true }
             )
+
+            if(!updatedStudent){
+                console.error("Student not found")
+                return res.status(404).json({ message: "Student not found" })
+            }
+
             console.log("Student updated successfully", updatedStudent)
-            return res.status(200).json({updatedStudent})
+            return res.status(200).json({ updatedStudent })
         }
 
-        if (req.body.employer_number){
-            const updatedTeacher = await Teacher.findByIdAndUpdate(
-                role_id, 
-                {$set:req.body},
-                {new:true}
-            )
-            console.log("Teacher updated successfully", updatedTeacher)
-            return res.status(200).json({updatedTeacher})
-        }
-
-        return res.status(200).json(updatedUser)
+        console.log("User updated successfully")
+        return res.status(200).json({ updatedUser })
 
     } catch (err) {
         console.error(err)        
