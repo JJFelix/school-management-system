@@ -4,6 +4,7 @@ import { getAllStudents, updatedStudentDetails } from '../controllers/student-co
 const studentRouter = express.Router()
 
 studentRouter.get('/', getAllStudents)
+studentRouter.get('/:id', )
 
 studentRouter.put('/update/:user_id', updatedStudentDetails)
 
