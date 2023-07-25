@@ -135,7 +135,7 @@ export const updateUser = async (req,res,next)=>{
 
     const {user_id} = req.params
     
-    try {
+    try {     
         const updatedUser = await User.findByIdAndUpdate(
             user_id, 
             { $set:req.body },
@@ -146,13 +146,13 @@ export const updateUser = async (req,res,next)=>{
             console.error("User not found")
             return res.status(404).json({ message: "User not found" })
         }
-        
+
         if (req.body.employer_number){
             const updatedTeacher = await Teacher.findOneAndUpdate(
                 { user: user_id },
                 { $set:req.body },
                 { new:true }
-            )
+            ).populate("user", "name email role")
     
             if(!updatedTeacher){
                 console.error("Teacher not found")
@@ -167,7 +167,7 @@ export const updateUser = async (req,res,next)=>{
                 { user:user_id },
                 { $set:req.body },
                 { new:true }
-            )
+            ).populate("user", "name email role")
 
             if(!updatedStudent){
                 console.error("Student not found")
@@ -184,5 +184,28 @@ export const updateUser = async (req,res,next)=>{
     } catch (err) {
         console.error(err)        
         res.status(500).json("Unexpected error occurred")
+    }
+}
+
+export const deleteUser = async (req, res, next) =>{
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+
+    const {user_id} = req.params
+
+    try {
+        const user = await User.findByIdAndRemove(user_id) 
+
+        if(!user){
+            console.log("User not found")
+            return res.status(404).json({message:"User not found"})
+        }
+        console.log(`User ${user_id} deleted`)
+        return res.status(200).json({message:`User ${user._id} deleted`})
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({message:"Unexpected error occurred"})
     }
 }

@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator'
 
 import Student from '../models/Student.js'
+import User from '../models/User.js'
 
 export const getAllStudents = async (req, res, next)=>{
     try {
@@ -15,6 +16,33 @@ export const getAllStudents = async (req, res, next)=>{
     } catch (err) {
         console.error(err)
         return res.status(500).json({ message:"Unexpected error happened" })
+    }
+}
+
+export const getStudent = async (req, res, next) =>{
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+
+    const {user_id} = req.params
+
+    try{
+        const student = await Student.findOne({ user: user_id}).populate('user', 'name email phone_number address role')
+
+        if(!student){
+            console.error("Student not found!");
+            return res.status(404).json({message: `Student with id ${user_id} not found` })
+        }
+
+        // const associatedUserDetails = await User.find(student.user)
+        // console.log(associatedUserDetails)
+        
+        console.log("Student retrieved successfully")
+        return res.status(200).json({ student })
+    }catch (err){
+        console.error(err);
+        return res.status(500).json({ message:"Unexpected error occurred" })
     }
 }
 
