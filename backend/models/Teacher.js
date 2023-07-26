@@ -13,9 +13,9 @@ const teacherSchema = new mongoose.Schema({
     }
 })
 
-teacherSchema.pre('remove', async function(next){
-    await this.model('Teacher').deleteMany({user:this.user})
-    next()
-})
+// teacherSchema.pre('remove', async function(next){
+//     await this.model('Teacher').deleteMany({user:this.user})
+//     next()
+// })
 
 export default mongoose.model('Teacher', teacherSchema)

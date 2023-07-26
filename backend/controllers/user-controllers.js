@@ -196,16 +196,34 @@ export const deleteUser = async (req, res, next) =>{
     const {user_id} = req.params
 
     try {
+        const student = await Student.findOneAndRemove({ user:user_id })
+        const teacher = await Teacher.findOneAndRemove({ user:user_id })
         const user = await User.findByIdAndRemove(user_id) 
+
+        if (!student){
+            console.log("Student not found");
+            // return res.status(404).json({ message: "Student not found" })
+        }else{
+            console.log("Student deleted")
+        }
+        
+
+        if(!teacher){
+            console.log("Teacher not found");
+            // return res.status(404).json({ message: "Teacher not found" })
+        }else{
+            console.log("Teacher deleted")
+        }        
 
         if(!user){
             console.log("User not found")
             return res.status(404).json({message:"User not found"})
         }
         console.log(`User ${user_id} deleted`)
-        return res.status(200).json({message:`User ${user._id} deleted`})
-    } catch (err) {
+
+        return res.status(200).json({ message:"Everything deleted", user })
+    } catch (err) {        
         console.error(err)
-        return res.status(500).json({message:"Unexpected error occurred"})
+        return res.status(500).json("Unexpected error occurred")
     }
 }

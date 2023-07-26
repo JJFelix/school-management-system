@@ -26,11 +26,11 @@ app.use('/api/teachers', teacherRouter)
 mongoose.connect(
     `mongodb+srv://admin:${process.env.MONGODB_PASSWORD}@cluster0.65ct9xk.mongodb.net/?retryWrites=true&w=majority`
     ).then(()=>{
-        User.schema.pre('remove', async function(next){
-            await this.model('Student').deleteMany({ user: this._id })
-            await this.model('Teacher').deleteMany({ user: this._id })
-            next()
-        })        
+        // User.schema.pre('remove', async function(next){
+        //     await this.model('Student').deleteMany({ user: this._id })
+        //     await this.model('Teacher').deleteMany({ user: this._id })
+        //     next()
+        // })        
         app.listen(process.env.PORT, ()=>{
             console.log(`Connected to MongoDB.\nServer listening on http://localhost:${process.env.PORT}`)
         })

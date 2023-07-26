@@ -1,4 +1,6 @@
 import mongoose from 'mongoose'
+import Student from './Student.js'
+import Teacher from './Teacher.js'
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -29,11 +31,27 @@ const userSchema = new mongoose.Schema({
     },
 })
 
-userSchema.pre('remove', async function(next){
-    await this.model('Student').deleteMany({ user: this._id })
+// userSchema.pre('remove', async function(next){
+//     const user = this
+//     await Student.deleteOne({ user: user._id })
 
-    await this.model('Teacher').deleteMany({user:this._id})
-    next()
-})
+//     await Teacher.deleteOne({ user:user._id })
+//     next()
+// })
+
+// userSchema.pre('remove', async function(next){
+//     const doc = await this.model.findOne(this.getQuery())
+//     if(doc){
+//         const userId = doc._id
+//         try {
+//             await this.model('Student').deleteOne({ user:userId })
+//             await this.model('Teacher').deleteOne({ user:userId })
+//             console.log(`Deleted related Student/Teacher documents for User:${userId}`);
+//         } catch (err) {
+//             console.error(`Error deleting related documents: ${err.message}`);        
+//             next(err)
+//         }
+//     }
+// })
 
 export default mongoose.model('User', userSchema)
